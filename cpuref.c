@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-
+#include "timing.c"
 #include "dump_buf.h"
 
 static void print_32x4s(char *name, unsigned int a, unsigned int b, unsigned int c, unsigned int d)
@@ -133,6 +133,7 @@ static inline void scrypt_core(uint32_t *X, uint32_t *V, int N)
 
 static void scrypt_test(void)
 {
+	struct timespec start, end;
 	int N = 1048576;
 	size_t size = 32 * (N + 1) * sizeof(uint32_t);
 	printf("size=%u\n", size);
@@ -160,9 +161,13 @@ static void scrypt_test(void)
 		0x67, 0x1c, 0xdb, 0x5c, 0xf9, 0xcf, 0x8f, 0xe8, 0xd1, 0x94, 0x06, 0xbe, 0xb9, 0x54, 0x2f, 0x05,
 	};
 
+	get_time(&start);
 	scrypt_core((void *)X, (void *)scratchpad, N);
+	get_time(&end);
 
 	dump_buf("X out", X, 32 * 4);
+
+	printf("elapsed: %f s\n", time_diff(&start, &end));
 }
 
 int main()

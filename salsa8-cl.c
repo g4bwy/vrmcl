@@ -12,6 +12,7 @@
 
 #include "clutils.c"
 
+#include "timing.c"
 
 static void print_B(char *name, unsigned int *B)
 {
@@ -23,7 +24,7 @@ static void print_B(char *name, unsigned int *B)
 
 
 
-static int nthreads = 32;
+static int nthreads = 256;
 
 typedef struct {
 	cl_command_queue cq;
@@ -55,6 +56,7 @@ int main(void)
 	int i, j;
 	cl_ulong l;
 	size_t wg;
+	struct timespec start_ts, end_ts;
 
 	cl_event ev1, ev2;
 
@@ -87,6 +89,8 @@ int main(void)
 	error = clEnqueueUnmapMemObject(cq, Bx_mem, Bx, 0, NULL, NULL);
 	error = clEnqueueUnmapMemObject(cq, B_mem, B, 0, NULL, NULL);
 
+	get_time(&start_ts);
+
 	/* Perform the operation */
 	wg = (size_t)nthreads;
 	error = clEnqueueNDRangeKernel(cq, xor_salsa8, 1, NULL, &wg, &wg, 0, NULL, &ev1);
@@ -96,10 +100,14 @@ int main(void)
 
 	printf("set callback: %d\n", clSetEventCallback(ev2, CL_COMPLETE, (void *)event_cb, (void *)B));
 
-	/* Await completion of all the above */
 	error = clFlush(cq);
+
 	printf("finish error: %d\n", error);
+	/* Await completion of all the above */
 	clFinish(cq);
+	get_time(&end_ts);
+
+	printf("elapsed: %f s\n", time_diff(&start_ts, &end_ts));
 
 	cl_ulong queued = 0, submit = 0, start = 0, end = 0;
 	clGetEventProfilingInfo(ev1, CL_PROFILING_COMMAND_QUEUED, sizeof(cl_ulong), &queued, NULL);
