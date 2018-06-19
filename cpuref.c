@@ -116,12 +116,17 @@ static void salsa8_test(void)
 static inline void scrypt_core(uint32_t *X, uint32_t *V, int N)
 {
 	int i;
-	
+	struct timespec loop1_start, loop1_end, loop2_end;
+
+	get_time(&loop1_start);
 	for (i = 0; i < N; i++) {
 		memcpy(&V[i * 32], X, 128);
 		xor_salsa8(&X[0], &X[16]);
 		xor_salsa8(&X[16], &X[0]);
 	}
+
+	get_time(&loop1_end);
+
 	for (i = 0; i < N; i++) {
 		uint32_t j = 32 * (X[16] & (N - 1));
 		for (uint8_t k = 0; k < 32; k++)
@@ -129,6 +134,10 @@ static inline void scrypt_core(uint32_t *X, uint32_t *V, int N)
 		xor_salsa8(&X[0], &X[16]);
 		xor_salsa8(&X[16], &X[0]);
 	}
+	get_time(&loop2_end);
+
+	printf("loop1: %f s, loop2: %f s\n", time_diff(&loop1_start, &loop1_end), time_diff(&loop1_end, &loop2_end));
+
 }
 
 static void scrypt_test(void)
@@ -137,7 +146,9 @@ static void scrypt_test(void)
 	int N = 1048576;
 	size_t size = 32 * (N + 1) * sizeof(uint32_t);
 	printf("size=%u\n", size);
-	unsigned char *scratchpad = malloc(size);
+	unsigned char *scratchpad;
+
+	posix_memalign((void **)&scratchpad, 4096, size);
 
 	uint8_t X[32*4] = {
 		0x2c, 0xea, 0xa9, 0x0e, 0x59, 0x44, 0x8a, 0x45, 0x31, 0x89, 0x2e, 0xac, 0xf5, 0xb8, 0x7b, 0x22,
