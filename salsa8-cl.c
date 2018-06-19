@@ -26,11 +26,6 @@ static void print_B(char *name, unsigned int *B)
 
 static int nthreads = 256;
 
-typedef struct {
-	cl_command_queue cq;
-	size_t worksize;
-	cl_mem B;
-} pwet;
 
 static void event_cb(cl_event ev, cl_int status, unsigned int *B)
 {
